@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0"></script>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <link href="Resources/styles.css" rel="stylesheet"/>
+        <title>Testing</title>
+    </head>
+    <body>
+        <div class="main-container">
+            <div class="header">
+                <p>AAA</p>
+                <p>Hello World</p>
+                <p>AAA</p>
+            </div>
+            <div class="body">
+                <div></div>
+                <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1;">
+                    <canvas id="rankingChart"></canvas>
+                </div>
+                <div class="createPoint">
+                    <h1 style="align-self: flex-start;">Tạo mới</h1>
+                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
+                        <div style="display: flex; flex-direction: column; gap: .25rem">
+                            <label for="name" id="nameLabel">Họ và tên</label>
+                            <input type="text" name="name" class="editName" id="name">
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
+                        <div style="display: flex; flex-direction: column; gap: .25rem">
+                            <label for="old" id="oldLabel">Độ già</label>
+                            <input type="number" name="old" class="editStatus" id="old" max="100" min="-100">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: .25rem">
+                            <label for="dirty" id="dirtyLabel">Độ bẩn</label>
+                            <input type="number" name="dirty" class="editStatus" id="dirty" max="100" min="-100">
+                        </div>
+                    </div>
+                    <button id='addPoint' onclick="createNewPoint()">Tạo điểm mới</button>
+                </div>
+                <div class="displayPoints">
+
+                </div>
+            </div>
+        </div>
+    </body>
+
+
+    <script>
+        //x: Già, y: Bẩn
+        const max = 100;
+        const min = -100;
+
+        let values = [];
+        let names = [];
+        let images = [];
+
+        const testImg = new Image(30, 30);
+        testImg.src = 'https://www.chartjs.org/docs/3.5.1/favicon.ico';
+
+        const ctx = document.getElementById('rankingChart');
+
+        const quadrants = {
+            id: ctx,
+            beforeDatasetDraw(chart, args, options) {
+                const {ctx, chartArea: {left, top, right, bottom}, scales: {x, y}} = chart;
+                const midX = x.getPixelForValue(0);
+                const midY = y.getPixelForValue(0);
+                ctx.save();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(left, top, midX - left, midY - top);
+                ctx.fillStyle = '#b8b8b8';
+                ctx.fillRect(midX, top, right - midX, midY - top);
+                ctx.fillStyle = '#787878';
+                ctx.fillRect(midX, midY, right - midX, bottom - midY);
+                ctx.fillStyle = '#2e2d2d';
+                ctx.fillRect(left, midY, midX - left, bottom - midY);
+                ctx.restore();
+            }
+        };
+
+        const titleTooltip = (chart) => {
+            var index = chart[0].dataIndex;
+            return names[index];
+        }
+
+        const labelTooltip = (context) => {
+            const old = context.parsed.x;
+            const dirty = context.parsed.y;
+            // return `Bẩn: ${dirty} || Già: ${old}`;
+            return `${old >= 0 ? 'Già' : 'Trẻ'}: ${Math.abs(old)} || ${dirty >= 0 ? 'Bẩn' : 'Sạch'}: ${Math.abs(dirty)}`;
+        }
+
+        const chart = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    data: values,
+                    usePointStyle: true,
+                    pointStyle: testImg,
+                }]
+            },
+            options: {
+                clip: false,
+                scales: {
+                    x: {
+                        min: min,
+                        max: max,   
+                        ticks: {
+                          callback: function(val, index) {
+                            if (index === 5) return 'SẠCH';
+                          },
+                          color: 'red',
+                        },
+                    },
+                    xAxis2: {
+                        position: 'top',
+                        min: min,
+                        max: max,
+                        ticks: {
+                          callback: function(val, index) {
+                            if (index === 5) return 'BẨN';
+                          }
+                        },
+                    },
+                    y: {
+                        min: min,
+                        max: max,   
+                        ticks: {
+                          callback: function(val, index) {
+                            if (index === 5) return 'TRẺ';
+                          } 
+                        },
+                    },
+                    yAxis2: {
+                        position: 'right',
+                        min: min,
+                        max: max,
+                        ticks: {
+                          callback: function(val, index) {
+                            if (index === 5) return 'GIÀ';
+                          }
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: titleTooltip,
+                            label: labelTooltip,
+                        }
+                    }
+                }
+            },
+            plugins: [quadrants],
+        })
+
+
+        function createNewPoint() {
+            var name = document.getElementById('name').value;
+            var old = document.getElementById('old').value;
+            var dirty = document.getElementById('dirty').value;
+
+            const checkCondition = () => {
+                if (name === '' || dirty > max || dirty < min || old > max || old < min) return false;
+                else return true;
+            }
+
+            const isValid = checkCondition();
+
+            if (isValid) {
+                const newPoint = {x: old, y: dirty};
+                values.push(newPoint);
+                names.push(name);
+                document.getElementById('dirty').value = 0;
+                document.getElementById('old').value = 0;
+                document.getElementById('name').value = '';
+                chart.update();
+            }
+        }
+    </script>
+</html>
