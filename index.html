@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-dragdata@latest/dist/chartjs-plugin-dragdata.min.js"></script>
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width" />
@@ -11,38 +12,50 @@
         <div class="main-container">
             <div class="header">
                 <p>AAA</p>
-                <p>Hello World</p>
+                <b style="font-size: 32px;">RANKING GIÀ BẨN!</b>
                 <p>AAA</p>
             </div>
             <div class="body">
-                <div></div>
-                <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1;">
-                    <canvas id="rankingChart"></canvas>
-                </div>
-                <div class="createPoint">
-                    <h1 style="align-self: flex-start;">Tạo mới</h1>
-                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
-                        <div style="display: flex; flex-direction: column; gap: .25rem">
-                            <label for="name" id="nameLabel">Họ và tên</label>
-                            <input type="text" name="name" class="editName" id="name">
+                <canvas id="rankingChart"></canvas>
+                <!-- <div style="display: flex; flex-direction: column; align-items: center; flex-grow: 1;">
+                </div> -->
+                <div style="display: flex; flex-direction: column; gap: 1rem">
+                    <div class="createPoint">
+                        <h1 style="align-self: flex-start;">Tạo mới</h1>
+                        <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
+                            <div style="display: flex; flex-direction: row; gap: 1rem">
+                                <div style="display: flex; flex-direction: column; gap: .25rem">
+                                    <label for="avatar" id="dropAvatar">
+                                        <input type="file" accept="image/*" id="avatar" hidden/>
+                                        <div id="imgView">
+                                            <p>Upload an image</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: .25rem">
+                                    <label for="name" id="nameLabel">Họ và tên</label>
+                                    <input type="text" name="name" class="editName" id="name">
+                                </div>
+                            </div>
                         </div>
+                        <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
+                            <div style="display: flex; flex-direction: column; gap: .25rem">
+                                <label for="old" id="oldLabel">Độ già</label>
+                                <input type="number" name="old" class="editStatus" id="old" max="100" min="-100">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: .25rem">
+                                <label for="dirty" id="dirtyLabel">Độ bẩn</label>
+                                <input type="number" name="dirty" class="editStatus" id="dirty" max="100" min="-100">
+                            </div>
+                        </div>
+                        <button id='addPoint' onclick="createNewPoint()">Tạo điểm mới</button>
                     </div>
-                    <div style="display: flex; flex-direction: row; gap: 1rem; flex-grow: 1; justify-content: center; align-items: center;">
-                        <div style="display: flex; flex-direction: column; gap: .25rem">
-                            <label for="old" id="oldLabel">Độ già</label>
-                            <input type="number" name="old" class="editStatus" id="old" max="100" min="-100">
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: .25rem">
-                            <label for="dirty" id="dirtyLabel">Độ bẩn</label>
-                            <input type="number" name="dirty" class="editStatus" id="dirty" max="100" min="-100">
-                        </div>
+                    <div class="displayPoints">
+                        <h1>Các điểm</h1>
                     </div>
-                    <button id='addPoint' onclick="createNewPoint()">Tạo điểm mới</button>
-                </div>
-                <div class="displayPoints">
-
                 </div>
             </div>
+            <b style="padding: 0 0 .25rem .25rem; color: gray">V. 0.3</b>
         </div>
     </body>
 
@@ -51,13 +64,14 @@
         //x: Già, y: Bẩn
         const max = 100;
         const min = -100;
+        const defaultAvatar = 'https://www.chartjs.org/docs/3.5.1/favicon.ico';
 
         let values = [];
         let names = [];
         let images = [];
+        let imgLinks = [defaultAvatar];
 
-        const testImg = new Image(30, 30);
-        testImg.src = 'https://www.chartjs.org/docs/3.5.1/favicon.ico';
+        const avatarsList = [];
 
         const ctx = document.getElementById('rankingChart');
 
@@ -68,6 +82,11 @@
                 const midX = x.getPixelForValue(0);
                 const midY = y.getPixelForValue(0);
                 ctx.save();
+
+                // const grad = ctx.createLinearGradient(left, top, right, bottom);
+                // ctx.fillStyle = grad;
+                // ctx.fillRect(left, top, right, bottom);
+                
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(left, top, midX - left, midY - top);
                 ctx.fillStyle = '#b8b8b8';
@@ -89,7 +108,7 @@
             const old = context.parsed.x;
             const dirty = context.parsed.y;
             // return `Bẩn: ${dirty} || Già: ${old}`;
-            return `${old >= 0 ? 'Già' : 'Trẻ'}: ${Math.abs(old)} || ${dirty >= 0 ? 'Bẩn' : 'Sạch'}: ${Math.abs(dirty)}`;
+            return `${old >= 0 ? 'Già' : 'Trẻ'}: ${Math.abs(old)}, ${dirty >= 0 ? 'Bẩn' : 'Sạch'}: ${Math.abs(dirty)}`;
         }
 
         const chart = new Chart(ctx, {
@@ -98,7 +117,7 @@
                 datasets: [{
                     data: values,
                     usePointStyle: true,
-                    pointStyle: testImg,
+                    pointStyle: avatarsList,
                 }]
             },
             options: {
@@ -111,7 +130,7 @@
                           callback: function(val, index) {
                             if (index === 5) return 'SẠCH';
                           },
-                          color: 'red',
+                          font: { size: 16, weight: 'bold' },
                         },
                     },
                     xAxis2: {
@@ -121,7 +140,8 @@
                         ticks: {
                           callback: function(val, index) {
                             if (index === 5) return 'BẨN';
-                          }
+                          },
+                          font: { size: 16, weight: 'bold' },
                         },
                     },
                     y: {
@@ -130,7 +150,8 @@
                         ticks: {
                           callback: function(val, index) {
                             if (index === 5) return 'TRẺ';
-                          } 
+                          },
+                          font: { size: 16, weight: 'bold' },
                         },
                     },
                     yAxis2: {
@@ -140,7 +161,8 @@
                         ticks: {
                           callback: function(val, index) {
                             if (index === 5) return 'GIÀ';
-                          }
+                          },
+                          font: { size: 16, weight: 'bold' },
                         },
                     },
                 },
@@ -152,7 +174,21 @@
                             title: titleTooltip,
                             label: labelTooltip,
                         }
-                    }
+                    },
+                    dragData: {
+                        round: 1,
+                        dragX: true,
+                        onDragStart: (e) => {
+
+                        },
+                        onDrag: (event, datasetIndex, index, value) => {
+                            event.target.style.cursor = 'grabbing';
+                            console.log(`Point #${index}: ${value.x}, ${value.y}`);
+                        },
+                        onDragEnd: (event, datasetIndex, index, value) => {
+                            event.target.style.cursor = 'default';
+                        }
+                    },
                 }
             },
             plugins: [quadrants],
@@ -175,11 +211,45 @@
                 const newPoint = {x: old, y: dirty};
                 values.push(newPoint);
                 names.push(name);
+                
+                if (imgLinks.length === 1) {
+                    createNewAvatar(imgLinks[0]);
+                } else if (imgLinks.length > 1) {
+                    createNewAvatar(imgLinks[imgLinks.length - 1]);
+                }
+                
                 document.getElementById('dirty').value = 0;
                 document.getElementById('old').value = 0;
                 document.getElementById('name').value = '';
                 chart.update();
             }
+        }
+
+        const dropAvatar = document.getElementById("dropAvatar");
+        const avatar = document.getElementById("avatar");
+        const imgView = document.getElementById("imgView");
+
+        avatar.addEventListener("change", uploadImage);
+
+        function uploadImage() {
+            const url = avatar.files[0];
+            const newAvatar = URL.createObjectURL(url);
+
+            if (imgLinks.length === 2) {
+                imgLinks.splice(1, 1, newAvatar)
+            } else {
+                imgLinks.push(newAvatar);
+            }
+            console.log(imgLinks);
+
+            imgView.style.backgroundImage = `url(${newAvatar})`;
+            imgView.textContent = '';
+        }
+
+        function createNewAvatar(link) {
+            const image = new Image(40, 40);
+            image.src = link;
+            avatarsList.push(image);
         }
     </script>
 </html>
